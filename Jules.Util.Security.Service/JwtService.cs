@@ -1,4 +1,5 @@
-﻿using Microsoft.IdentityModel.Tokens;
+﻿using Microsoft.Extensions.Configuration;
+using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
@@ -10,8 +11,16 @@ namespace Jules.Util.Security.Service
     /// </summary>
     public class JwtService : IJwtService
     {
-        private readonly string _secretKey = "Le Tour du monde en quatre-vingts jours"; // Store securely in a config file or secret store
+        private readonly string _secretKey;
+        private readonly string _issuer;
+        private readonly string _audience;
 
+        public JwtService(IConfiguration config)
+        {
+            _secretKey = config["JWTSettings:Key"];
+            _issuer = config["JWTSettings:Issuer"];
+            _audience = config["JWTSettings:Audience"];
+        }
         /// <summary>
         /// Generates a JWT token based on the provided claims.
         /// </summary>
@@ -25,8 +34,8 @@ namespace Jules.Util.Security.Service
 
             // Create the token with the claims, expiration, and signing credentials
             var token = new JwtSecurityToken(
-                issuer: "your_issuer",
-                audience: "your_audience",
+                issuer: _issuer,
+                audience: _audience,
                 claims: claims,
                 expires: DateTime.Now.AddHours(1),
                 signingCredentials: creds

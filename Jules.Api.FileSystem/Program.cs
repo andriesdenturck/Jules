@@ -66,6 +66,10 @@ builder.Services.AddControllers();
 // Configure JWT Authentication
 var key = "Le Tour du monde en quatre-vingts jours";  // Ideally, store this key in environment variables or a secret manager
 
+var secretKey = builder.Configuration["JWTSettings:Key"];
+var issuer = builder.Configuration["JWTSettings:Issuer"];
+var audience = builder.Configuration["JWTSettings:Audience"];
+
 builder.Services.AddAuthentication(options =>
 {
     options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
@@ -81,10 +85,10 @@ builder.Services.AddAuthentication(options =>
             ValidateAudience = true,
             ValidateLifetime = true,
             ValidateIssuerSigningKey = true,
-            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(key)),
+            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secretKey)),
             ClockSkew = TimeSpan.Zero, // Optional: Default is 5 minutes, set to 0 for stricter expiry validation
-            ValidIssuer = "your_issuer",
-            ValidAudience = "your_audience"
+            ValidIssuer = issuer,
+            ValidAudience = audience
         });
 
 // Add authentication middleware
