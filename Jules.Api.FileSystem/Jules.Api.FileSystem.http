@@ -1,0 +1,11 @@
+@Jules.Api.FileSystem_HostAddress = http://localhost:5228
+
+GET {{Jules.Api.FileSystem_HostAddress}}/index.html/
+Accept: application/json
+
+###
+
+GET {{Jules.Api.FileSystem_HostAddress}}/index.html/1
+Accept: application/json
+
+###

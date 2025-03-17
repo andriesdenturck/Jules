@@ -1,0 +1,21 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Jules.Access.Blob.Contracts\Jules.Access.Blob.Contracts.csproj" />
+    <ProjectReference Include="..\Jules.Access.Archive.Contracts\Jules.Access.Archive.Contracts.csproj" />
+    <ProjectReference Include="..\Jules.Engine.Parsing.Contracts\Jules.Engine.Parsing.Contracts.csproj" />
+    <ProjectReference Include="..\Jules.Manager.FileSystem.Contracts\Jules.Manager.FileSystem.Contracts.csproj" />
+    <ProjectReference Include="..\Jules.Util.Shared\Jules.Util.Shared.csproj" />
+  </ItemGroup>
+
+	<ItemGroup>
+		<PackageReference Include="AutoMapper" Version="14.0.0" />
+	</ItemGroup>
+	
+</Project>
