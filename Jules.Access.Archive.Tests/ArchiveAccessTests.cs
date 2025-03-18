@@ -1,5 +1,6 @@
 ﻿using AutoMapper;
 using FluentAssertions;
+using Jules.Access.Archive.Contracts.Models;
 using Jules.Access.Archive.Service;
 using Jules.Access.Archive.Service.Models;
 using Jules.Util.Security.Contracts;
@@ -7,8 +8,6 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Moq;
 using NUnit.Framework;
-using ArchiveAccess = Jules.Access.Archive.Service.ArchiveAccess;
-using ItemInfo = Jules.Access.Archive.Contracts.Models.ItemInfo;
 
 namespace Jules.Access.Archive.Tests
 {
@@ -17,7 +16,6 @@ namespace Jules.Access.Archive.Tests
     {
         private Mock<IUserContext> _mockUserContext;
         private Mock<ILogger<ArchiveAccess>> _mockLogger;
-        private Mock<IMapper> _mockMapper;
         private ArchiveDbContext _dbContext;
         private ArchiveAccess _archiveAccess;
         private string _userName;
@@ -35,7 +33,6 @@ namespace Jules.Access.Archive.Tests
             _mockUserContext.Setup(u => u.IsInRole("admin")).ReturnsAsync(false);
 
             _mockLogger = new Mock<ILogger<ArchiveAccess>>();
-            _mockMapper = new Mock<IMapper>();
 
             var options = new DbContextOptionsBuilder<ArchiveDbContext>()
                 .UseInMemoryDatabase(Guid.NewGuid().ToString())
@@ -60,7 +57,7 @@ namespace Jules.Access.Archive.Tests
             var item = _dbContext.Items.SingleOrDefault(i => i.Path == path);
             item.Should().NotBeNull();
             result.Should().NotBeNull();
-            result.Name.Should().Be("folderA");
+            result.Path.Should().Be(path);
         }
 
         [Test]
@@ -75,8 +72,8 @@ namespace Jules.Access.Archive.Tests
             _dbContext.Items.Add(item);
             await _dbContext.SaveChangesAsync();
 
-            var ItemInfo = await _archiveAccess.CreateFolderAsync(path);
-            ItemInfo.Path.Should().Be(path);
+            var itemInfo = await _archiveAccess.CreateFolderAsync(path);
+            itemInfo.Path.Should().Be(path);
         }
 
         [Test]
@@ -86,7 +83,7 @@ namespace Jules.Access.Archive.Tests
             {
                 Id = Guid.NewGuid(),
                 Path = $"file:///{_userName}/",
-                Name = string.Empty,
+                Name = _userName,
                 IsFolder = true
             };
             _dbContext.Items.Add(parent);
@@ -98,13 +95,14 @@ namespace Jules.Access.Archive.Tests
             });
             await _dbContext.SaveChangesAsync();
 
-            var file = new ItemInfo { Name = "myfile.txt", Path = $"file:///{_userName}/myfile.txt", TokenId = "token", MimeType = "some-type" };
+            var path = $"file:///{_userName}/myfile.txt";
+            var file = new ItemInfo { Path = path, TokenId = "token", MimeType = "some-type" };
 
             var result = await _archiveAccess.CreateFileAsync(file);
 
             var item = _dbContext.Items.Single(i => i.Name == "myfile.txt");
             item.Should().NotBeNull();
-            result.Name.Should().Be("myfile.txt");
+            result.Path.Should().Be(path);
         }
 
         [Test]
@@ -115,7 +113,7 @@ namespace Jules.Access.Archive.Tests
             _dbContext.Items.Add(new ArchiveItemDb { Name = "myfile.txt", Parent = entity });
             _dbContext.SaveChanges();
 
-            var file = new ItemInfo { Name = "myfile.txt", Path = $"file:///{_userName}/myfile.txt", TokenId = "token", MimeType = "some-type" };
+            var file = new ItemInfo { Path = $"file:///{_userName}/myfile.txt", TokenId = "token", MimeType = "some-type" };
 
             Assert.ThrowsAsync<Exception>(async () => await _archiveAccess.CreateFileAsync(file));
         }
@@ -127,7 +125,7 @@ namespace Jules.Access.Archive.Tests
             _dbContext.Items.Add(parent);
             await _dbContext.SaveChangesAsync();
 
-            var file = new ItemInfo { Name = "myfile.txt", Path = $"file:///{_userName}/myfile.txt", TokenId = "token", MimeType = "some-type" };
+            var file = new ItemInfo { Path = $"file:///{_userName}/myfile.txt", TokenId = "token", MimeType = "some-type" };
 
             _mockUserContext.Setup(u => u.UserId).Returns(Guid.NewGuid());
 
@@ -197,7 +195,7 @@ namespace Jules.Access.Archive.Tests
             await _dbContext.SaveChangesAsync();
 
             var children = (await _archiveAccess.GetChildrenAsync($"{_userName}/", false)).ToList();
-            children.Should().Contain(c => c.Name.EndsWith("child1.txt") || c.Name.EndsWith("child2.txt"));
+            children.Should().Contain(c => c.Path.EndsWith("child1.txt") || c.Path.EndsWith("child2.txt"));
         }
     }
 }

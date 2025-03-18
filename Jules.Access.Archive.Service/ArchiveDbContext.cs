@@ -1,5 +1,6 @@
 ﻿using Jules.Access.Archive.Service.Models;
 using Jules.Util.Security.Contracts;
+using Jules.Util.Shared;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.ChangeTracking;
 
@@ -15,7 +16,7 @@ public class ArchiveDbContext : DbContext
     }
 
     public DbSet<ArchiveItemDb> Items { get; set; }
-    public DbSet<FileInfoDb> FileInfos { get; set; }
+    public DbSet<FileMetaDataDb> FileInfos { get; set; }
     public DbSet<ItemPermissionDb> ItemPermissions { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -23,26 +24,30 @@ public class ArchiveDbContext : DbContext
         base.OnModelCreating(modelBuilder);
 
         modelBuilder.Entity<ArchiveItemDb>()
+        .HasIndex(u => u.Path)
+        .IsUnique();
+
+        modelBuilder.Entity<ArchiveItemDb>()
                 .HasMany(p => p.Children)
                 .WithOne(c => c.Parent)
                 .HasForeignKey(c => c.ParentId)
-                .OnDelete(DeleteBehavior.Cascade); //We assume that Delete rights always cascade
+                .OnDelete(DeleteBehavior.Cascade);
 
         modelBuilder.Entity<ArchiveItemDb>()
                     .HasMany(c => c.Permissions)
                      .WithOne(c => c.Item)
                     .HasForeignKey(c => c.ItemId)
-                    .OnDelete(DeleteBehavior.Cascade); //We assume that Delete rights always cascade
+                    .OnDelete(DeleteBehavior.Cascade);
 
         modelBuilder.Entity<ArchiveItemDb>()
                 .Property(i => i.CreatedOn)
                 .ValueGeneratedOnAdd()
-                .HasValueGenerator<CustomCreatedOnValueGenerator>();  // Use custom value generator
+                .HasValueGenerator<CustomCreatedOnValueGenerator>();
 
         modelBuilder.Entity<ItemPermissionDb>()
                 .Property(i => i.CreatedOn)
                 .ValueGeneratedOnAdd()
-                .HasValueGenerator<CustomCreatedOnValueGenerator>();  // Use custom value generator
+                .HasValueGenerator<CustomCreatedOnValueGenerator>();
     }
 
     public override int SaveChanges()
@@ -59,11 +64,11 @@ public class ArchiveDbContext : DbContext
         return await base.SaveChangesAsync(cancellationToken);
     }
 
+    // Auto-add owner permission on new items
     private void HandlePermissionHooks()
     {
         var userId = userContext.UserId;
 
-        // Auto-add owner permission on new items
         var newItems = ChangeTracker.Entries<ArchiveItemDb>()
             .Where(e => e.State == EntityState.Added)
             .Select(e => e.Entity);
@@ -89,23 +94,8 @@ public class ArchiveDbContext : DbContext
         {
             if (entry.State == EntityState.Added || entry.State == EntityState.Modified)
             {
-                entry.Entity.Path = BuildPath(entry.Entity.Parent?.Path, entry.Entity.Name, entry.Entity.IsFolder).ToString();
+                entry.Entity.Path = UriHelper.BuildPath(entry.Entity.Parent?.Path, entry.Entity.Name, entry.Entity.IsFolder).ToString();
             }
         }
-    }
-
-    private Uri BuildPath(string? parentPath, string itemName, bool isFolder)
-    {
-        if (string.IsNullOrWhiteSpace(parentPath))
-        {
-            parentPath = $"file:///";
-        }
-
-        // Sanitize name
-        var safeName = isFolder && !string.IsNullOrEmpty(itemName) ? $"{itemName}/" : itemName;
-
-        var parentUri = new Uri(parentPath, UriKind.Absolute);
-
-        return new Uri(parentUri, safeName);
     }
 }

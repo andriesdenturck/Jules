@@ -1,12 +1,12 @@
 ﻿using AutoMapper;
 using AutoMapper.QueryableExtensions;
 using Jules.Access.Archive.Contracts;
+using Jules.Access.Archive.Contracts.Models;
 using Jules.Access.Archive.Service.Models;
 using Jules.Util.Security.Contracts;
 using Jules.Util.Shared;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
-using ItemInfo = Jules.Access.Archive.Contracts.Models.ItemInfo;
 
 namespace Jules.Access.Archive.Service;
 
@@ -56,14 +56,14 @@ public class ArchiveAccess : ServiceBase<ArchiveAccess>, IArchiveAccess
             throw new UnauthorizedAccessException();
         }
 
-        var newFileInfoDb = MapToFileInfoDb(fileInfo);
+        var newFileMetaDataDb = MapToFileMetaDataDb(fileInfo);
 
         var newItem = new ArchiveItemDb
         {
             IsFolder = false,
-            Name = fileInfo.Name,
+            Name = fileUri.Segments.Last(),
             Parent = parent,
-            FileInfo = newFileInfoDb,
+            FileInfo = newFileMetaDataDb,
         };
 
         dbContext.Items.Add(newItem);
@@ -73,13 +73,14 @@ public class ArchiveAccess : ServiceBase<ArchiveAccess>, IArchiveAccess
     }
 
     /// <inheritdoc />
-    public async Task<ItemInfo> CreateFolderAsync(string path)
+    public async Task<ItemInfo> CreateFolderAsync(string folderPath)
     {
-        if (!path.EndsWith("/"))
+        if (!folderPath.EndsWith("/"))
         {
-            path += "/";
+            folderPath += "/";
         }
-        var folderUri = UriHelper.GetUri(path);
+        var folderUri = UriHelper.GetUri(folderPath);
+
         var existingFolder = await dbContext.Items.SingleOrDefaultAsync(item => item.Path == folderUri.AbsoluteUri);
 
         if (existingFolder != null)
@@ -103,51 +104,14 @@ public class ArchiveAccess : ServiceBase<ArchiveAccess>, IArchiveAccess
     }
 
     /// <inheritdoc />
-    private async Task<ArchiveItemDb> GetParent(Uri fileUri)
-    {
-        var parentUri = fileUri.AbsoluteUri.EndsWith("/") ? new Uri(fileUri, "..") : new Uri(fileUri, ".");
-
-        ArchiveItemDb parent = await GetItemByPath(parentUri.AbsoluteUri);
-
-        if (parent != null)
-        {
-            return parent;
-        }
-        else
-        {
-            if (parentUri.LocalPath == "/")
-            {
-                if (fileUri.Segments.Last().Trim('/') == userContext.UserName)
-                {
-                    return null;
-                }
-
-                throw new Exception();
-            }
-
-            var grandParent = await GetParent(parentUri);
-
-            if (grandParent != null && dbContext.Entry(grandParent).State != EntityState.Added && !await HasPrivilegesForItemInternal(grandParent, PermissionType.CreateFolder))
-            {
-                throw new UnauthorizedAccessException();
-            }
-
-            parent = new ArchiveItemDb
-            {
-                Name = parentUri.Segments.Last().Trim('/'),
-                Parent = grandParent,
-                IsFolder = true, // assume only last is file, others are folders
-            };
-
-            dbContext.Items.Add(parent);
-            return parent;
-        }
-    }
-
-    /// <inheritdoc />
     public async Task DeleteAsync(string itemPath)
     {
-        ArchiveItemDb item = await GetItemByPath(itemPath);
+        var item = await GetItemByPath(itemPath);
+
+        if (item == null)
+        {
+            throw new KeyNotFoundException("File not found.");
+        }
 
         if (!await HasPrivilegesForItemInternal(item, PermissionType.Delete))
         {
@@ -163,9 +127,9 @@ public class ArchiveAccess : ServiceBase<ArchiveAccess>, IArchiveAccess
     {
         var uri = UriHelper.GetUri(parentFolder);
 
-
-
-        IQueryable<ArchiveItemDb> itemsQuery = !foldersOrFiles.HasValue ? dbContext.Items.Include(c => c.FileInfo) : dbContext.Items.Include(c => c.FileInfo).Where(it => it.IsFolder == foldersOrFiles);
+        IQueryable<ArchiveItemDb> itemsQuery = dbContext.Items.Include(c => c.FileInfo);
+       
+        itemsQuery = !foldersOrFiles.HasValue ? itemsQuery : itemsQuery.Where(it => it.IsFolder == foldersOrFiles);
 
         var isAdmin = await this.userContext.IsInRole("admin");
 
@@ -175,8 +139,7 @@ public class ArchiveAccess : ServiceBase<ArchiveAccess>, IArchiveAccess
         }
 
         Guid userId = this.userContext.UserId;
-        var permissionQuery = dbContext.ItemPermissions;
-        // Step 1: Build the paths the user has access to based on permissions (no ToList)
+
         return dbContext.ItemPermissions
             .Where(p => p.UserId == userId && p.PermissionType.HasFlag(PermissionType.Read))
             .Join(itemsQuery, p => p.ItemId, i => i.Id, (p, i) => i)
@@ -187,14 +150,14 @@ public class ArchiveAccess : ServiceBase<ArchiveAccess>, IArchiveAccess
     /// <inheritdoc />
     public async Task<bool> HasPrivilegesForItemAsync(string itemPath, PermissionType privilege)
     {
-        var itemDb = await GetItemByPath(itemPath);
+        var item = await GetItemByPath(itemPath);
 
-        if (itemDb == null)
+        if (item == null)
         {
             throw new KeyNotFoundException("File or folder not found");
         }
 
-        return await HasPrivilegesForItemInternal(itemDb, privilege);
+        return await HasPrivilegesForItemInternal(item, privilege);
     }
 
     /// <inheritdoc />
@@ -238,6 +201,46 @@ public class ArchiveAccess : ServiceBase<ArchiveAccess>, IArchiveAccess
         return MapToItemInfo(item);
     }
 
+    private async Task<ArchiveItemDb?> GetParent(Uri fileUri)
+    {
+        var parentUri = fileUri.AbsoluteUri.EndsWith("/") ? new Uri(fileUri, "..") : new Uri(fileUri, ".");
+
+        var parent = await GetItemByPath(parentUri.AbsoluteUri);
+
+        if (parent != null)
+        {
+            return parent;
+        }
+        else
+        {
+            if (parentUri.LocalPath == "/")
+            {
+                if (fileUri.Segments.Last().Trim('/') == userContext.UserName)
+                {
+                    return null;
+                }
+
+                throw new Exception();
+            }
+
+            var grandParent = await GetParent(parentUri);
+
+            if (grandParent != null && dbContext.Entry(grandParent).State != EntityState.Added && !await HasPrivilegesForItemInternal(grandParent, PermissionType.CreateFolder))
+            {
+                throw new UnauthorizedAccessException();
+            }
+
+            parent = new ArchiveItemDb
+            {
+                Name = parentUri.Segments.Last().Trim('/'),
+                Parent = grandParent,
+                IsFolder = true, // assume only last is file, others are folders
+            };
+
+            dbContext.Items.Add(parent);
+            return parent;
+        }
+    }
     private async Task<ArchiveItemDb?> GetItemByPath(string itemPath) => await dbContext.Items.SingleOrDefaultAsync(p => p.Path == UriHelper.GetUri(itemPath).AbsoluteUri);
 
     private async Task<bool> HasPrivilegesForItemInternal(ArchiveItemDb item, PermissionType privilege)
@@ -259,7 +262,7 @@ public class ArchiveAccess : ServiceBase<ArchiveAccess>, IArchiveAccess
             .AnyAsync();
     }
 
-    private FileInfoDb MapToFileInfoDb(ItemInfo fileInfo) => this.mapper.Map<FileInfoDb>(fileInfo);
+    private FileMetaDataDb MapToFileMetaDataDb(ItemInfo fileInfo) => this.mapper.Map<FileMetaDataDb>(fileInfo);
 
     private ItemInfo MapToItemInfo(ArchiveItemDb fileItem) => this.mapper.Map<ItemInfo>(fileItem);
 }

@@ -1,7 +1,6 @@
 ﻿using AutoMapper;
 using Microsoft.Extensions.Logging;
 using Jules.Access.Archive.Contracts;
-using Jules.Access.Archive.Contracts.Models;
 using Jules.Access.Blob.Contracts;
 using Jules.Access.Blob.Contracts.Models;
 using Jules.Access.Blob.Service;
@@ -12,7 +11,6 @@ using Jules.Util.Security.Contracts;
 using Jules.Util.Shared;
 using ItemInfo = Jules.Access.Archive.Contracts.Models.ItemInfo;
 using Jules.Engine.Parsing.Contracts.Models;
-using System.IO;
 
 namespace Jules.Manager.FileSystem.Service;
 
@@ -67,12 +65,11 @@ namespace Jules.Manager.FileSystem.Service;
 
         ItemInfo itemInfo = MapToFileInfo(fileContent);
         itemInfo.TokenId = token;
-        itemInfo.Name = fileContent.FileName;
-        itemInfo.Path = new Uri(UriHelper.GetUri(folderPath), itemInfo.Name).AbsoluteUri;
+        itemInfo.Path = UriHelper.BuildPath(folderPath, fileContent.FileName,false).AbsoluteUri;
 
         var newItemInfo = await archiveAccess.CreateFileAsync(itemInfo);
 
-        return this.MapToItem(newItemInfo);
+        return MapToItem(newItemInfo);
     }
 
     /// <inheritdoc />

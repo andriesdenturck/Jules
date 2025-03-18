@@ -1,6 +1,6 @@
 ﻿namespace Jules.Access.Archive.Service.Models;
 
-public class FileInfoDb
+public class FileMetaDataDb
 {
     public Guid Id { get; set; }
     public long? Size { get; set; }

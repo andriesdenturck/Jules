@@ -9,11 +9,17 @@ public class ArchiveItemDb
     public string Name { get; set; }
 
     public bool IsFolder { get; set; }
+
     public Guid? ParentId { get; set; }
-    public ArchiveItemDb Parent { get; set; }
+
+    public ArchiveItemDb? Parent { get; set; }
+
     public Guid? FileInfoId { get; set; }
-    public FileInfoDb FileInfo { get; set; }
+
+    public FileMetaDataDb? FileInfo { get; set; }
+
     public DateTimeOffset CreatedOn { get; set; }
+
     public Guid CreatedBy { get; set; }
 
     // Navigation property for child items (files/folders inside this folder)

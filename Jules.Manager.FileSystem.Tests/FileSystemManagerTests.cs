@@ -125,8 +125,8 @@ namespace Jules.Manager.FileSystem.Tests
         public async Task ListFiles_ReturnsMappedItems()
         {
             var children = new List<ItemInfo> {
-                new ItemInfo { Name = "file1.txt" },
-                new ItemInfo { Name = "file2.txt" }
+                new ItemInfo { Path = "file1.txt" },
+                new ItemInfo { Path = "file2.txt" }
             };
 
             mockArchiveAccess.Setup(x => x.GetChildrenAsync("/folder", null)).ReturnsAsync(children.AsQueryable());
