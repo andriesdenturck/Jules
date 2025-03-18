@@ -94,45 +94,41 @@ public class FileSystemManagerController : ControllerBase
     }
 
     /// <summary>
-    /// Reads a file from the specified path.
+    /// Reads a file from the specified path, or if a folder is specified, returns a ZIP of its contents.
     /// </summary>
-    /// <param name="filePath">The path to the file to read.</param>
-    /// <returns>200 OK with file content, 400 BadRequest, 403 Forbidden, or 501 NotImplemented.</returns>
-    [HttpGet("ReadFile")]
-    public async Task<IActionResult> ReadFile([FromQuery] string filePath)
+    /// <param name="path">The path to the file or folder to read.</param>
+    /// <returns>200 OK with file content or ZIP, 400 BadRequest, 403 Forbidden.</returns>
+    [HttpGet("DownloadFile")]
+    public async Task<IActionResult> DownloadFile([FromQuery] string path)
     {
-        if (string.IsNullOrWhiteSpace(filePath))
-            return BadRequest("File path must be provided.");
+        if (string.IsNullOrWhiteSpace(path))
+            return BadRequest("Path must be provided.");
 
         try
         {
-            var content = await fileSystemManager.DownloadAsync(filePath);
-            return Ok(MapToResponse(content));
+            var content = await fileSystemManager.DownloadAsync(path);
+            return File(content.Data, content.MimeType ?? "application/octet-stream", content.FileName ?? "Unnamed");
         }
         catch (UnauthorizedAccessException)
         {
-            return Forbid("You do not have permission to read this file.");
-        }
-        catch (NotImplementedException)
-        {
-            return StatusCode(501, "Reading multiple files is not yet implemented.");
+            return Forbid("You do not have permission to read this file or folder.");
         }
     }
 
     /// <summary>
     /// Deletes a file or folder at the specified path.
     /// </summary>
-    /// <param name="filePath">The path to the file or folder to delete.</param>
+    /// <param name="path">The path to the file or folder to delete.</param>
     /// <returns>200 OK on success, 400 BadRequest, or 403 Forbidden.</returns>
     [HttpDelete("Delete")]
-    public async Task<IActionResult> Delete([FromQuery] string filePath)
+    public async Task<IActionResult> Delete([FromQuery] string path)
     {
-        if (string.IsNullOrWhiteSpace(filePath))
+        if (string.IsNullOrWhiteSpace(path))
             return BadRequest("File path must be provided.");
 
         try
         {
-            var result = await fileSystemManager.DeleteAsync(filePath);
+            var result = await fileSystemManager.DeleteAsync(path);
             return Ok(result);
         }
         catch (UnauthorizedAccessException)
@@ -176,21 +172,6 @@ public class FileSystemManagerController : ControllerBase
         return Ok(result);
     }
 
-    /// <summary>
-    /// Maps internal <see cref="FileContent"/> to a <see cref="FileResponse"/> DTO.
-    /// </summary>
-    /// <param name="content">The file content to map.</param>
-    /// <returns>Mapped <see cref="FileResponse"/>.</returns>
-    private FileResponse MapToResponse(FileContent content)
-    {
-        return new FileResponse
-        {
-            Content = content.Data,
-            MimeType = content.MimeType ?? "application/octet-stream",
-            FileName = content.FileName ?? "Unnamed",
-            FolderPath = content.Path
-        };
-    }
 
     /// <summary>
     /// Maps internal <see cref="Manager.FileSystem.Contracts.Models.Item"/> to API <see cref="Models.Item"/>.
@@ -201,7 +182,6 @@ public class FileSystemManagerController : ControllerBase
     {
         return new Models.Item
         {
-            Name = item.Name,
             Path = item.Path,
             IsFolder = item.IsFolder,
             CreatedOn = item.CreatedOn,

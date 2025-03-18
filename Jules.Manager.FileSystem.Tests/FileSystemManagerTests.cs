@@ -43,12 +43,12 @@ namespace Jules.Manager.FileSystem.Tests
         public async Task CreateFile_WithValidPrivileges_ReturnsItem()
         {
             // Arrange
-            string folderPath = "/folder";
-            var fileContent = new FileContent { Path = "/folder/file.txt", MimeType = "text/plain", Data = new byte[] { 0x01 } };
+            string folderPath = "folder";
+            var fileContent = new FileContent { Path = "folder/file.txt", MimeType = "text/plain", Data = new byte[] { 0x01 } };
             var itemInfo = new ItemInfo();
             var createdItemInfo = new ItemInfo { Path = fileContent.Path, TokenId = "token" };
 
-            mockArchiveAccess.Setup(x => x.HasPrivilegesForItemAsync(folderPath, PermissionType.CreateFile)).ReturnsAsync(true);
+            mockArchiveAccess.Setup(x => x.HasPrivilegesForItemAsync("file:///folder/", PermissionType.CreateFile)).ReturnsAsync(true);
             mockBlobAccess.Setup(x => x.CreateAsync(It.IsAny<Blob>())).ReturnsAsync("token");
             mockArchiveAccess.Setup(x => x.CreateFileAsync(It.IsAny<ItemInfo>())).ReturnsAsync(createdItemInfo);
 

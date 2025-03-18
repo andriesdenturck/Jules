@@ -14,9 +14,9 @@ public class ArchiveItemDb
 
     public ArchiveItemDb? Parent { get; set; }
 
-    public Guid? FileInfoId { get; set; }
+    public Guid? FileMetaDataId { get; set; }
 
-    public FileMetaDataDb? FileInfo { get; set; }
+    public FileMetaDataDb? FileMetaData { get; set; }
 
     public DateTimeOffset CreatedOn { get; set; }
 

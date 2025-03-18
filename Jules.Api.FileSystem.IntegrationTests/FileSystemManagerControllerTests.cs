@@ -82,13 +82,13 @@ public class FileSystemManagerControllerTests
         await CreateFileAsync(folderPath, fileName);
 
         // Assert
-        var filesResponse = await _client.GetAsync($"/api/FileSystemManager/ReadFile?filePath={folderPath}{fileName}");
-        var body = await filesResponse.Content.ReadAsStringAsync();
-        Assert.That(body, Does.Contain(fileName));
+        var filesResponse = await _client.GetAsync($"/api/FileSystemManager/DownloadFile?path={folderPath}{fileName}");
+        var contentDisposition = filesResponse.Content.Headers.ContentDisposition;
+        Assert.That(contentDisposition.FileName, Is.EqualTo(fileName));
     }
 
     [Test]
-    public async Task ReadFile_ShouldReturnFileContent()
+    public async Task DownloadFile_ShouldReturnFileContent()
     {
         // Arrange
         var folderPath = "/testuser/integration-test/folder2/";
@@ -97,14 +97,18 @@ public class FileSystemManagerControllerTests
         await CreateFileAsync(folderPath, fileName, expectedText);
 
         // Act
-        var response = await _client.GetAsync($"/api/FileSystemManager/ReadFile?filePath={folderPath}{fileName}");
-        var fileResponse = JsonConvert.DeserializeObject<FileResponse>(await response.Content.ReadAsStringAsync());
+        var response = await _client.GetAsync($"/api/FileSystemManager/DownloadFile?path={folderPath}{fileName}");
+        var contentDisposition = response.Content.Headers.ContentDisposition;
+        var fileContent = await response.Content.ReadAsByteArrayAsync();
 
         // Assert
         Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.OK));
+        Assert.That(response.Content.Headers.ContentType.ToString(), Is.EqualTo("text/plain"));
+        Assert.That(contentDisposition, Is.Not.Null);
+        Assert.That(contentDisposition.FileName, Is.EqualTo(fileName));
 
         //// Convert byte array to original string (assuming UTF-8 encoding)
-        var content = Encoding.UTF8.GetString(fileResponse.Content);
+        var content = Encoding.UTF8.GetString(fileContent);
 
         Assert.That(content, Contains.Substring(content));
     }
@@ -118,7 +122,7 @@ public class FileSystemManagerControllerTests
         await CreateFileAsync(folderPath, fileName);
 
         // Act
-        var response = await _client.DeleteAsync($"/api/FileSystemManager/Delete?filePath={folderPath}{fileName}");
+        var response = await _client.DeleteAsync($"/api/FileSystemManager/Delete?path={folderPath}{fileName}");
         var body = await response.Content.ReadAsStringAsync();
         // Assert
         Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.OK));

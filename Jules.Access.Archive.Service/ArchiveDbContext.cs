@@ -34,6 +34,12 @@ public class ArchiveDbContext : DbContext
                 .OnDelete(DeleteBehavior.Cascade);
 
         modelBuilder.Entity<ArchiveItemDb>()
+            .HasOne(p => p.FileMetaData)
+            .WithOne(c => c.File)
+        .HasForeignKey<FileMetaDataDb>(c => c.FileId) // Replace with actual FK property
+            .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<ArchiveItemDb>()
                     .HasMany(c => c.Permissions)
                      .WithOne(c => c.Item)
                     .HasForeignKey(c => c.ItemId)

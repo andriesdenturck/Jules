@@ -102,7 +102,7 @@ public partial class ParsingEngine : ServiceBase<ParsingEngine>, IParsingEngine
                     }
 
                     // Create an entry for the file in the zip archive, maintaining the folder structure
-                    var entryName = item.Path;
+                    var entryName = UriHelper.GetUri(item.Path).LocalPath.TrimStart('/');
                     var entry = zipArchive.CreateEntry(entryName);
 
                     using (var entryStream = entry.Open())

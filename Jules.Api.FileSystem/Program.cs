@@ -17,6 +17,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
+using Swashbuckle.AspNetCore.SwaggerUI;
 using System.Security.Claims;
 using System.Text;
 using System.Text.Json.Serialization;
@@ -152,6 +153,7 @@ if (app.Environment.IsDevelopment())
     {
         options.SwaggerEndpoint("/swagger/v1/swagger.json", "FileSystem API V1");
         options.RoutePrefix = ""; // Serve Swagger UI at root
+        options.EnableTryItOutByDefault();
     });
 
     //This makes authorization easier in Swagger
@@ -176,10 +178,10 @@ app.MapControllers();
 
 app.Run();
 
+[JsonSerializable(typeof(ValidationProblemDetails))]
 [JsonSerializable(typeof(UserLogin))]
 [JsonSerializable(typeof(FileRequest))]
 [JsonSerializable(typeof(AuthResponse))]
-[JsonSerializable(typeof(FileResponse))]
 [JsonSerializable(typeof(ProblemDetails))]
 [JsonSerializable(typeof(Jules.Api.FileSystem.Models.Item[]))]
 public partial class AppJsonContext : JsonSerializerContext

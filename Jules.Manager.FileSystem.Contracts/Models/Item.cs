@@ -7,12 +7,6 @@
     public class Item
     {
         /// <summary>
-        /// Gets or sets the name of the item (file or folder).
-        /// This property holds the name of the item, including its extension for files (e.g., "document.txt", "image.jpg").
-        /// </summary>
-        public string Name { get; set; }
-
-        /// <summary>
         /// Gets or sets the path of the item (file or folder).
         /// This property represents the location of the item in the file system. It can be null for root-level items.
         /// This property is marked as internal to restrict its access outside the assembly.

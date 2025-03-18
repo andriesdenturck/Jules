@@ -10,8 +10,8 @@ public class ArchiveMappingProfile : Profile
     {
         this.CreateMap<FileMetaDataDb, ItemInfo>().ReverseMap();
         this.CreateMap<ArchiveItemDb, ItemInfo>()
-            .ForMember(fi => fi.MimeType, opt => opt.MapFrom(src => src.FileInfo.MimeType))
-            .ForMember(fi => fi.TokenId, opt => opt.MapFrom(src => src.FileInfo.TokenId))
-            .ForMember(fi => fi.Size, opt => opt.MapFrom(src => src.FileInfo.Size));
+            .ForMember(fi => fi.MimeType, opt => opt.MapFrom(src => src.FileMetaData.MimeType))
+            .ForMember(fi => fi.TokenId, opt => opt.MapFrom(src => src.FileMetaData.TokenId))
+            .ForMember(fi => fi.Size, opt => opt.MapFrom(src => src.FileMetaData.Size));
     }
 }

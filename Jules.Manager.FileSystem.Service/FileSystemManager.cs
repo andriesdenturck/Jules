@@ -39,6 +39,7 @@ public class FileSystemManager : ServiceBase<FileSystemManager>, IFileSystemMana
     {
         try
         {
+            folderPath = UriHelper.BuildPath(folderPath, "", true).AbsoluteUri;
             if (!await archiveAccess.HasPrivilegesForItemAsync(folderPath, PermissionType.CreateFile))
             {
                 throw new UnauthorizedAccessException("Insufficient privileges to create file.");

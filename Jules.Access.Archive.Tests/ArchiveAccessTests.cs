@@ -1,5 +1,6 @@
 ﻿using AutoMapper;
 using FluentAssertions;
+using Jules.Access.Archive.Contracts;
 using Jules.Access.Archive.Contracts.Models;
 using Jules.Access.Archive.Service;
 using Jules.Access.Archive.Service.Models;
@@ -42,8 +43,28 @@ namespace Jules.Access.Archive.Tests
 
             _archiveAccess = new ArchiveAccess(_dbContext, _mockUserContext.Object, _mockLogger.Object);
         }
+    
 
-        [Test]
+    [Test]
+    public async Task AdminUser_CanCreateAnyFolder()
+    {
+        // Arrange
+        string newFolderPath = "root/admin-folder/";
+            _mockUserContext.Setup(x => x.IsInRole("admin")).ReturnsAsync(true);
+            _mockUserContext.Setup(x => x.UserId).Returns(Guid.NewGuid());
+            _mockUserContext.Setup(x => x.UserName).Returns("admin-user");
+
+
+        // Act
+        var result = await _archiveAccess.CreateFolderAsync(newFolderPath);
+
+        // Assert
+        Assert.That(result, Is.Not.Null);
+        Assert.That(result.IsFolder, Is.True);
+        Assert.That(result.Path.EndsWith("admin-folder/"), Is.True);
+    }
+
+    [Test]
         public async Task CreateFolder_Should_Create_New_Folder_When_Valid()
         {
             var parent = new ArchiveItemDb { Id = Guid.NewGuid(), Name = _userName, IsFolder = true };

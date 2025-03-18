@@ -8,7 +8,7 @@ public static class UriHelper
         {
             if (Uri.TryCreate(path, UriKind.Relative, out Uri? _))
             {
-                return GetUri("file:///" + path);
+                return GetUri("file:///" + path.TrimStart('/'));
             }
             throw new Exception("Invalid URI.");
         }
@@ -27,11 +27,15 @@ public static class UriHelper
         {
             parentPath = $"file:///";
         }
+        else
+        {
+            parentPath = parentPath.Trim('/') + "/";
+        }
 
         var parentUri = GetUri(parentPath);
 
         // Sanitize name
-        var safeName = isFolder && !string.IsNullOrEmpty(itemName) ? $"{itemName}/" : itemName;
+        var safeName = isFolder && !string.IsNullOrEmpty(itemName) && !itemName.EndsWith("/") ? $"{itemName}/" : itemName;
 
         return new Uri(parentUri, safeName);
     }

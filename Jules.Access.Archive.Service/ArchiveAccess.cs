@@ -7,6 +7,8 @@ using Jules.Util.Security.Contracts;
 using Jules.Util.Shared;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
+using System;
+using System.IO;
 
 namespace Jules.Access.Archive.Service;
 
@@ -65,7 +67,7 @@ public class ArchiveAccess : ServiceBase<ArchiveAccess>, IArchiveAccess
             IsFolder = false,
             Name = fileUri.Segments.Last(),
             Parent = parent,
-            FileInfo = newFileMetaDataDb,
+            FileMetaData = newFileMetaDataDb,
         };
 
         dbContext.Items.Add(newItem);
@@ -77,11 +79,7 @@ public class ArchiveAccess : ServiceBase<ArchiveAccess>, IArchiveAccess
     /// <inheritdoc />
     public async Task<ItemInfo> CreateFolderAsync(string folderPath)
     {
-        if (!folderPath.EndsWith("/"))
-        {
-            folderPath += "/";
-        }
-        var folderUri = UriHelper.GetUri(folderPath);
+        var folderUri = UriHelper.BuildPath(folderPath, "", true);
 
         var existingFolder = await dbContext.Items.SingleOrDefaultAsync(item => item.Path == folderUri.AbsoluteUri);
 
@@ -108,7 +106,7 @@ public class ArchiveAccess : ServiceBase<ArchiveAccess>, IArchiveAccess
     /// <inheritdoc />
     public async Task DeleteAsync(string itemPath)
     {
-        var item = await GetItemByPath(itemPath);
+        var item = await GetItemTreeByPath(itemPath);
 
         if (item == null)
         {
@@ -120,7 +118,9 @@ public class ArchiveAccess : ServiceBase<ArchiveAccess>, IArchiveAccess
             throw new UnauthorizedAccessException();
         }
 
-        dbContext.Items.Remove(item);
+        var itemsToDelete = dbContext.Items.Include(c => c.FileMetaData).Include(c => c.Permissions).Where(i => i.Path.StartsWith(item.Path));
+
+        dbContext.Items.RemoveRange(itemsToDelete);
         dbContext.SaveChanges();
     }
 
@@ -129,7 +129,7 @@ public class ArchiveAccess : ServiceBase<ArchiveAccess>, IArchiveAccess
     {
         var uri = UriHelper.GetUri(parentFolder);
 
-        IQueryable<ArchiveItemDb> itemsQuery = dbContext.Items.Include(c => c.FileInfo);
+        IQueryable<ArchiveItemDb> itemsQuery = dbContext.Items.Include(c => c.FileMetaData);
        
         itemsQuery = !foldersOrFiles.HasValue ? itemsQuery : itemsQuery.Where(it => it.IsFolder == foldersOrFiles);
 
@@ -152,11 +152,12 @@ public class ArchiveAccess : ServiceBase<ArchiveAccess>, IArchiveAccess
     /// <inheritdoc />
     public async Task<bool> HasPrivilegesForItemAsync(string itemPath, PermissionType privilege)
     {
+        itemPath = UriHelper.GetUri(itemPath).AbsoluteUri;
         var item = await GetItemByPath(itemPath);
 
         if (item == null)
         {
-            throw new KeyNotFoundException("File or folder not found");
+            throw new KeyNotFoundException($"File or folder not found: {itemPath}.");
         }
 
         return await HasPrivilegesForItemInternal(item, privilege);
@@ -217,7 +218,7 @@ public class ArchiveAccess : ServiceBase<ArchiveAccess>, IArchiveAccess
         {
             if (parentUri.LocalPath == "/")
             {
-                if (fileUri.Segments.Last().Trim('/') == userContext.UserName)
+                if (fileUri.Segments.Last().Trim('/') == userContext.UserName || await this.userContext.IsInRole("admin"))
                 {
                     return null;
                 }
@@ -244,6 +245,10 @@ public class ArchiveAccess : ServiceBase<ArchiveAccess>, IArchiveAccess
         }
     }
     private async Task<ArchiveItemDb?> GetItemByPath(string itemPath) => await dbContext.Items.SingleOrDefaultAsync(p => p.Path == UriHelper.GetUri(itemPath).AbsoluteUri);
+    private async Task<ArchiveItemDb?> GetItemTreeByPath(string itemPath) => await dbContext.Items
+        .Include(item=>item.Children)
+        .Include(item=>item.Permissions)    
+        .SingleOrDefaultAsync(p => p.Path == UriHelper.GetUri(itemPath).AbsoluteUri);
 
     private async Task<bool> HasPrivilegesForItemInternal(ArchiveItemDb item, PermissionType privilege)
     {
