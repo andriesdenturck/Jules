@@ -121,7 +121,7 @@ public class ArchiveAccess : ServiceBase<ArchiveAccess>, IArchiveAccess
         var itemsToDelete = dbContext.Items.Include(c => c.FileMetaData).Include(c => c.Permissions).Where(i => i.Path.StartsWith(item.Path));
 
         dbContext.Items.RemoveRange(itemsToDelete);
-        dbContext.SaveChanges();
+        await dbContext.SaveChangesAsync();
     }
 
     /// <inheritdoc />
