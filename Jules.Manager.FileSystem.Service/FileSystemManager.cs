@@ -32,14 +32,13 @@ namespace Jules.Manager.FileSystem.Service;
     /// <summary>
     /// Creates an instance of the <see cref="FileSystemManager"/> class with required dependencies.
     /// </summary>
-    /// <param name="userContext">Context of the current user for permission checks.</param>
     /// <param name="archiveAccess">Access service for archive-based metadata operations.</param>
     /// <param name="blobAccess">Blob access service for raw file storage and retrieval.</param>
     /// <param name="parsingEngine">Engine for searching and compressing files.</param>
     /// <param name="logger">Logger instance.</param>
-    public FileSystemManager(IUserContext userContext, IArchiveAccess archiveAccess, IBlobAccess blobAccess, IParsingEngine parsingEngine, ILogger<FileSystemManager> logger)
-            : base(userContext, logger)
-        {
+    public FileSystemManager(IArchiveAccess archiveAccess, IBlobAccess blobAccess, IParsingEngine parsingEngine, ILogger<FileSystemManager> logger)
+            : base(logger)
+    {
         this.archiveAccess = archiveAccess;
         this.blobAccess = blobAccess;
         this.parsingEngine = parsingEngine;

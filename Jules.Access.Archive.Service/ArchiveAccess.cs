@@ -18,6 +18,7 @@ namespace Jules.Access.Archive.Service;
 public class ArchiveAccess : ServiceBase<ArchiveAccess>, IArchiveAccess
 {
     private readonly ArchiveDbContext dbContext;
+    private readonly IUserContext userContext;
     private readonly IMapper mapper;
 
     /// <summary>
@@ -27,9 +28,10 @@ public class ArchiveAccess : ServiceBase<ArchiveAccess>, IArchiveAccess
     /// <param name="context">The Entity Framework database context for archive data.</param>
     /// <param name="userContext">Provides information about the current user, used for permission checks.</param>
     /// <param name="logger">Logger instance for logging operations.</param>
-    public ArchiveAccess(ArchiveDbContext context, IUserContext userContext, ILogger<ArchiveAccess> logger) : base(userContext, logger)
+    public ArchiveAccess(ArchiveDbContext context, IUserContext userContext, ILogger<ArchiveAccess> logger) : base(logger)
     {
         this.dbContext = context;
+        this.userContext = userContext;
 
         MapperConfiguration configBlob = new MapperConfiguration(cfg =>
         {

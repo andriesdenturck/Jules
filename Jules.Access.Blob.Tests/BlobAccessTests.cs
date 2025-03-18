@@ -11,13 +11,12 @@ namespace Jules.Access.Blob.Tests
     public class BlobAccessTests
     {
         private Mock<IEncryptionService> mockEncryption;
-        private Mock<IUserContext> mockUserContext;
         private Mock<ILogger<BlobAccess>> mockLogger;
         private BlobDbContext dbContext;
         private BlobAccess blobAccess;
 
         [SetUp]
-        public async Task Setup()
+        public void Setup()
         {
             var options = new DbContextOptionsBuilder<BlobDbContext>()
                 .UseInMemoryDatabase(Guid.NewGuid().ToString())
@@ -25,16 +24,15 @@ namespace Jules.Access.Blob.Tests
 
             dbContext = new BlobDbContext(options);
             mockEncryption = new Mock<IEncryptionService>();
-            mockUserContext = new Mock<IUserContext>();
             mockLogger = new Mock<ILogger<BlobAccess>>();
 
-            blobAccess = new BlobAccess(dbContext, mockEncryption.Object, mockUserContext.Object, mockLogger.Object);
+            blobAccess = new BlobAccess(dbContext, mockEncryption.Object, mockLogger.Object);
         }
 
         [Test]
         public async Task Create_Should_Save_And_Return_Encrypted_Id()
         {
-            var blob = new Contracts.Models.Blob { FileName = "file.txt", Data = new byte[] { 0x1, 0x2 }, MimeType = "text/plain" };
+            var blob = new Contracts.Models.Blob { FileName = "file.txt", Data = [0x1, 0x2], MimeType = "text/plain" };
             mockEncryption.Setup(e => e.Encrypt(It.IsAny<string>())).Returns("encrypted-id");
 
             var result = await blobAccess.CreateAsync(blob);
@@ -49,7 +47,7 @@ namespace Jules.Access.Blob.Tests
         }
 
         [Test]
-        public async Task Create_With_Null_Should_Throw()
+        public void Create_With_Null_Should_Throw()
         {
             Assert.ThrowsAsync<ArgumentNullException>(() => blobAccess.CreateAsync(null));
         }
@@ -58,7 +56,7 @@ namespace Jules.Access.Blob.Tests
         public async Task Read_Should_Return_Valid_Blob()
         {
             var id = Guid.NewGuid();
-            dbContext.Blobs.Add(new BlobDb { Id = id, FileName = "hello.txt", Data = new byte[] { 0x3 }, MimeType = "text/plain" });
+            dbContext.Blobs.Add(new BlobDb { Id = id, FileName = "hello.txt", Data = [0x3], MimeType = "text/plain" });
             dbContext.SaveChanges();
 
             mockEncryption.Setup(e => e.Decrypt("valid-token")).Returns(id.ToString());
@@ -70,7 +68,7 @@ namespace Jules.Access.Blob.Tests
         }
 
         [Test]
-        public async Task Read_With_Invalid_Token_Should_Throw_ArgumentException()
+        public void Read_With_Invalid_Token_Should_Throw_ArgumentException()
         {
             mockEncryption.Setup(e => e.Decrypt("invalid-token")).Throws<FormatException>();
 
@@ -79,7 +77,7 @@ namespace Jules.Access.Blob.Tests
         }
 
         [Test]
-        public async Task Read_With_Unknown_Id_Should_Throw_KeyNotFoundException()
+        public void Read_With_Unknown_Id_Should_Throw_KeyNotFoundException()
         {
             var randomId = Guid.NewGuid();
             mockEncryption.Setup(e => e.Decrypt("unknown-token")).Returns(randomId.ToString());
@@ -105,7 +103,7 @@ namespace Jules.Access.Blob.Tests
         }
 
         [Test]
-        public async Task Delete_Non_Existent_Should_Throw_KeyNotFoundException()
+        public void Delete_Non_Existent_Should_Throw_KeyNotFoundException()
         {
             var id = Guid.NewGuid();
             mockEncryption.Setup(e => e.Decrypt("bad-token")).Returns(id.ToString());
@@ -142,7 +140,7 @@ namespace Jules.Access.Blob.Tests
         }
 
         [Test]
-        public async Task BulkDelete_With_One_Bad_Token_Should_Throw_KeyNotFoundException()
+        public void BulkDelete_With_One_Bad_Token_Should_Throw_KeyNotFoundException()
         {
             var goodId = Guid.NewGuid();
             dbContext.Blobs.Add(new BlobDb { Id = goodId, FileName = "file-good", MimeType = "text/plain", Data = new byte[0] });
@@ -190,7 +188,7 @@ namespace Jules.Access.Blob.Tests
 
         // Additional unit test for Update with Null Blob
         [Test]
-        public async Task Update_With_Null_Should_Throw_ArgumentNullException()
+        public void Update_With_Null_Should_Throw_ArgumentNullException()
         {
             Assert.ThrowsAsync<ArgumentNullException>(() => blobAccess.UpdateAsync(null));
         }

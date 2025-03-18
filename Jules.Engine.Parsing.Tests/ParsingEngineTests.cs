@@ -14,18 +14,16 @@ namespace Jules.Engine.Parsing.Tests
     public class ParsingEngineTests
     {
         private Mock<IBlobAccess> mockBlobAccess;
-        private Mock<IUserContext> mockUserContext;
         private Mock<ILogger<ParsingEngine>> mockLogger;
         private ParsingEngine parsingEngine;
 
         [SetUp]
-        public async Task SetUp()
+        public void SetUp()
         {
             mockBlobAccess = new Mock<IBlobAccess>();
-            mockUserContext = new Mock<IUserContext>();
             mockLogger = new Mock<ILogger<ParsingEngine>>();
 
-            parsingEngine = new ParsingEngine(mockBlobAccess.Object, mockUserContext.Object, mockLogger.Object);
+            parsingEngine = new ParsingEngine(mockBlobAccess.Object, mockLogger.Object);
         }
 
         [Test]

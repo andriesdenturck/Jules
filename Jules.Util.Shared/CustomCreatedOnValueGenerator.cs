@@ -1,7 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore.ChangeTracking;
 using Microsoft.EntityFrameworkCore.ValueGeneration;
 
-namespace Jules.Access.Archive.Service;
+namespace Jules.Util.Shared;
 
 public class CustomCreatedOnValueGenerator : ValueGenerator<DateTimeOffset>
 {

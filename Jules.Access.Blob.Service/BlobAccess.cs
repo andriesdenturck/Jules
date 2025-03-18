@@ -6,194 +6,183 @@ using Jules.Util.Shared;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 
-namespace Jules.Access.Blob.Service
+namespace Jules.Access.Blob.Service;
+
+/// <summary>
+/// Implementation of <see cref="IBlobAccess"/> that manages blobs, including creating, reading, updating, and deleting them.
+/// </summary>
+public class BlobAccess : ServiceBase<BlobAccess>, IBlobAccess
 {
+    private readonly BlobDbContext dbContext;
+    private readonly IEncryptionService encryption;
+    private readonly IMapper mapper;
+
     /// <summary>
-    /// Implementation of <see cref="IBlobAccess"/> that manage blobs, including creating, reading, deleting, and bulk deleting blobs.
+    /// Initializes a new instance of the <see cref="BlobAccess"/> class.
     /// </summary>
-    public class BlobAccess : ServiceBase<BlobAccess>, IBlobAccess
+    /// <param name="dbContext">The database context for accessing blob data.</param>
+    /// <param name="encryptionService">The encryption service used for token encryption and decryption.</param>
+    /// <param name="logger">The logger used to log any errors or information.</param>
+    public BlobAccess(BlobDbContext dbContext,
+                      IEncryptionService encryptionService,
+                      ILogger<BlobAccess> logger) : base(logger)
     {
-        private readonly BlobDbContext dbContext;
-        private readonly IEncryptionService encryption;
-        private readonly IMapper mapper;
+        this.dbContext = dbContext;
+        this.encryption = encryptionService;
 
-        /// <summary>
-        /// Initializes a new instance of the <see cref="BlobAccess"/> class.
-        /// </summary>
-        /// <param name="dbContext">The database context for accessing blob data.</param>
-        /// <param name="encryption">The encryption service used for token encryption and decryption.</param>
-        /// <param name="userContext">The user context used for logging and tracking user information.</param>
-        /// <param name="logger">The logger used to log any errors or information.</param>
-        public BlobAccess(BlobDbContext dbContext,
-            IEncryptionService encryption,
-            IUserContext userContext,
-            ILogger<BlobAccess> logger) : base(userContext, logger)
+        var config = new MapperConfiguration(cfg =>
         {
-            this.dbContext = dbContext;
-            this.encryption = encryption;
+            cfg.AddProfile(new BlobMappingProfile());
+        });
 
-            MapperConfiguration configBlob = new MapperConfiguration(cfg =>
-            {
-                cfg.AddProfile(new BlobMappingProfile());
-            });
+        this.mapper = new Mapper(config);
+    }
 
-            this.mapper = new Mapper(configBlob);
+    /// <inheritdoc />
+    public async Task<string> CreateAsync(Contracts.Models.Blob file)
+    {
+        try
+        {
+            var fileDb = ReverseMap(file);
+
+            dbContext.Add(fileDb);
+            await dbContext.SaveChangesAsync();
+
+            return encryption.Encrypt(fileDb.Id.ToString());
         }
-
-        /// <inheritdoc />
-        public async Task<Contracts.Models.Blob> ReadAsync(string token)
+        catch (Exception ex)
         {
-            try
-            {
-                BlobDb fileDb = await GetBlobByToken(token);
-                return Map(fileDb);
-            }
-            catch (Exception ex)
-            {
-                Logger.LogError(ex, "Failed to read blob with token: {token}", token);
-                throw; // or return null / custom error model
-            }
+            Logger.LogError(ex, "Failed to create blob.");
+            throw;
         }
+    }
 
-        /// <inheritdoc />
-        public async Task<string> CreateAsync(Contracts.Models.Blob file)
+    /// <inheritdoc />
+    public async Task<Contracts.Models.Blob> ReadAsync(string token)
+    {
+        try
         {
-            try
-            {
-                var fileDb = ReverseMap(file);
-
-                dbContext.Add(fileDb);
-                await dbContext.SaveChangesAsync();
-
-                return this.encryption.Encrypt(fileDb.Id.ToString());
-            }
-            catch (Exception ex)
-            {
-                Logger.LogError(ex, "Failed to create blob.");
-                throw;
-            }
+            var fileDb = await GetBlobByToken(token);
+            return Map(fileDb);
         }
-
-        /// <inheritdoc />
-        public async Task<string> UpdateAsync(Contracts.Models.Blob file)
+        catch (Exception ex)
         {
-            ArgumentNullException.ThrowIfNull(file);
-
-            try
-            {
-                // Map the incoming blob to the database entity model
-                var fileDb = ReverseMap(file);
-
-                fileDb.Id = Guid.Parse(this.encryption.Decrypt(file.TokenId));
-
-                // Check if the entity is being tracked by the DbContext and detach if needed
-                var existingBlob = await dbContext.Blobs.FindAsync(fileDb.Id);
-                if (existingBlob != null)
-                {
-                    dbContext.Entry(existingBlob).State = EntityState.Detached;  // Detach the existing entity
-                }
-
-                // Update the blob record in the database
-                dbContext.Blobs.Update(fileDb);
-
-                // Save the changes to the database
-                await dbContext.SaveChangesAsync();
-
-                // Return the encrypted ID of the updated blob as a token for future access
-                return file.TokenId;
-            }
-            catch (Exception ex)
-            {
-                // Log the error if an exception occurs
-                Logger.LogError(ex, "Failed to update blob.");
-
-                // Rethrow the exception so that it can be handled higher up the call stack
-                throw;
-            }
+            Logger.LogError(ex, "Failed to read blob with token: {token}", token);
+            throw;
         }
+    }
 
-        /// <inheritdoc />
-        public async Task DeleteAsync(string token)
+    /// <inheritdoc />
+    public async Task<string> UpdateAsync(Contracts.Models.Blob file)
+    {
+        ArgumentNullException.ThrowIfNull(file);
+
+        try
         {
-            try
+            var existingBlob = await GetBlobByToken(file.TokenId);
+
+            if (existingBlob != null)
             {
-                BlobDb fileDb = await GetBlobByToken(token);
-                dbContext.Blobs.Remove(fileDb);
-                dbContext.SaveChanges();
+                dbContext.Entry(existingBlob).State = EntityState.Detached;
             }
-            catch (Exception ex)
-            {
-                Logger.LogError(ex, "Failed to delete blob with token: {token}", token);
-                throw;
-            }
+
+            var fileDb = ReverseMap(file);
+
+            fileDb.Id = existingBlob.Id;
+
+            dbContext.Blobs.Update(fileDb);
+
+            await dbContext.SaveChangesAsync();
+
+            return file.TokenId;
         }
-
-        /// <inheritdoc />
-        public async Task BulkDeleteAsync(IEnumerable<string> tokens)
+        catch (Exception ex)
         {
-            try
-            {
-                IEnumerable<BlobDb> blobDbs = await Task.WhenAll(tokens.Select(async t => await GetBlobByToken(t)));
-                dbContext.Blobs.RemoveRange(blobDbs);
-                await dbContext.SaveChangesAsync();
-            }
-            catch (Exception ex)
-            {
-                Logger.LogError(ex, "Failed to bulk delete blobs.");
-                throw;
-            }
+            Logger.LogError(ex, "Failed to update blob.");
+            throw;
         }
+    }
 
-        /// <inheritdoc />
-        private async Task<BlobDb> GetBlobByToken(string token)
+    /// <inheritdoc />
+    public async Task DeleteAsync(string token)
+    {
+        try
         {
-            try
-            {
-                var decryptedToken = Guid.Parse(this.encryption.Decrypt(token));
-                var fileDb = await dbContext.Blobs.SingleAsync(x => x.Id == decryptedToken);
-                return fileDb;
-            }
-            catch (FormatException ex)
-            {
-                Logger.LogError(ex, "Token format is invalid: {token}", token);
-                throw new ArgumentException("Invalid token format.", nameof(token), ex);
-            }
-            catch (InvalidOperationException ex)
-            {
-                Logger.LogError(ex, "No blob found for token: {token}", token);
-                throw new KeyNotFoundException("Blob not found.", ex);
-            }
-            catch (Exception ex)
-            {
-                Logger.LogError(ex, "Error retrieving blob for token: {token}", token);
-                throw;
-            }
+            var fileDb = await GetBlobByToken(token);
+            dbContext.Blobs.Remove(fileDb);
+            await dbContext.SaveChangesAsync();
         }
-
-        private BlobDb ReverseMap(Contracts.Models.Blob blob)
+        catch (Exception ex)
         {
-            try
-            {
-                return this.mapper.Map<BlobDb>(blob);
-            }
-            catch (Exception ex)
-            {
-                Logger.LogError(ex, "Failed to map Blob to BlobDb.");
-                throw;
-            }
+            Logger.LogError(ex, "Failed to delete blob with token: {token}", token);
+            throw;
         }
+    }
 
-        private Contracts.Models.Blob Map(BlobDb blobDb)
+    /// <inheritdoc />
+    public async Task BulkDeleteAsync(IEnumerable<string> tokens)
+    {
+        try
         {
-            try
-            {
-                return this.mapper.Map<Contracts.Models.Blob>(blobDb);
-            }
-            catch (Exception ex)
-            {
-                Logger.LogError(ex, "Failed to map BlobDb to Blob.");
-                throw;
-            }
+            var blobDbs = await Task.WhenAll(tokens.Select(GetBlobByToken));
+            dbContext.Blobs.RemoveRange(blobDbs);
+            await dbContext.SaveChangesAsync();
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Failed to bulk delete blobs.");
+            throw;
+        }
+    }
+
+    private async Task<BlobDb> GetBlobByToken(string token)
+    {
+        try
+        {
+            var decryptedId = Guid.Parse(encryption.Decrypt(token));
+            var fileDb = await dbContext.Blobs.SingleAsync(x => x.Id == decryptedId);
+            return fileDb;
+        }
+        catch (FormatException ex)
+        {
+            Logger.LogError(ex, "Invalid token format: {token}", token);
+            throw new ArgumentException("Invalid token format.", nameof(token), ex);
+        }
+        catch (InvalidOperationException ex)
+        {
+            Logger.LogError(ex, "No blob found for token: {token}", token);
+            throw new KeyNotFoundException("Blob not found.", ex);
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Unexpected error retrieving blob: {token}", token);
+            throw;
+        }
+    }
+
+    private BlobDb ReverseMap(Contracts.Models.Blob blob)
+    {
+        try
+        {
+            return mapper.Map<BlobDb>(blob);
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Failed to map Blob to BlobDb.");
+            throw;
+        }
+    }
+
+    private Contracts.Models.Blob Map(BlobDb blobDb)
+    {
+        try
+        {
+            return mapper.Map<Contracts.Models.Blob>(blobDb);
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Failed to map BlobDb to Blob.");
+            throw;
         }
     }
 }

@@ -18,7 +18,6 @@ namespace Jules.Manager.FileSystem.Tests
     public class FileSystemManagerTests
     {
         private FileSystemManager sut;
-        private Mock<IUserContext> mockUserContext;
         private Mock<IArchiveAccess> mockArchiveAccess;
         private Mock<IBlobAccess> mockBlobAccess;
         private Mock<IParsingEngine> mockParsingEngine;
@@ -27,14 +26,12 @@ namespace Jules.Manager.FileSystem.Tests
         [SetUp]
         public async Task Setup()
         {
-            mockUserContext = new Mock<IUserContext>();
             mockArchiveAccess = new Mock<IArchiveAccess>();
             mockBlobAccess = new Mock<IBlobAccess>();
             mockParsingEngine = new Mock<IParsingEngine>();
             mockLogger = new Mock<ILogger<FileSystemManager>>();
 
             sut = new FileSystemManager(
-                mockUserContext.Object,
                 mockArchiveAccess.Object,
                 mockBlobAccess.Object,
                 mockParsingEngine.Object,

@@ -20,10 +20,9 @@ public partial class ParsingEngine : ServiceBase<ParsingEngine>, IParsingEngine
     /// Initializes a new instance of the <see cref="ParsingEngine"/> class.
     /// </summary>
     /// <param name="blobAccess">Service to retrieve blob content from storage.</param>
-    /// <param name="userContext">The user context containing authentication and authorization information.</param>
     /// <param name="logger">Logger instance for logging events in the service.</param>
-    public ParsingEngine(IBlobAccess blobAccess, IUserContext userContext, ILogger<ParsingEngine> logger)
-        : base(userContext, logger)
+    public ParsingEngine(IBlobAccess blobAccess, ILogger<ParsingEngine> logger)
+        : base(logger)
     {
         this.blobAccess = blobAccess;
     }
