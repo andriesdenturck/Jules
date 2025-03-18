@@ -1,0 +1,30 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+	<PropertyGroup>
+		<TargetFramework>net8.0</TargetFramework>
+		<Nullable>enable</Nullable>
+		<ImplicitUsings>enable</ImplicitUsings>
+		<InvariantGlobalization>true</InvariantGlobalization>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<PackageReference Include="Moq" Version="4.20.72" />
+		<PackageReference Include="NUnit" Version="4.3.2" />
+		<PackageReference Include="NUnit3TestAdapter" Version="4.5.0" />
+		<PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.9.0" />
+		<PackageReference Include="Microsoft.EntityFrameworkCore.InMemory" Version="9.0.3" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<ProjectReference Include="..\Jules.Access.Blob.Service\Jules.Access.Blob.Service.csproj" />
+		<ProjectReference Include="..\Jules.Access.Archive.Contracts\Jules.Access.Archive.Contracts.csproj" />
+		<ProjectReference Include="..\Jules.Access.Archive.Service\Jules.Access.Archive.Service.csproj" />
+		<ProjectReference Include="..\Jules.Engine.Parsing.Contracts\Jules.Engine.Parsing.Contracts.csproj" />
+		<ProjectReference Include="..\Jules.Engine.Parsing.Service\Jules.Engine.Parsing.Service.csproj" />
+		<ProjectReference Include="..\Jules.Manager.FileSystem.Contracts\Jules.Manager.FileSystem.Contracts.csproj" />
+		<ProjectReference Include="..\Jules.Manager.FileSystem.Service\Jules.Manager.FileSystem.Service.csproj" />
+		<ProjectReference Include="..\Jules.Util.Security.Contracts\Jules.Util.Security.Contracts.csproj" />
+		<ProjectReference Include="..\Jules.Util.Security.Service\Jules.Util.Security.Service.csproj" />
+	</ItemGroup>
+
+</Project>

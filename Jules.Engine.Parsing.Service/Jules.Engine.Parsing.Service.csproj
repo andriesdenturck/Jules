@@ -1,0 +1,16 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <InvariantGlobalization>true</InvariantGlobalization>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Jules.Access.Blob.Contracts\Jules.Access.Blob.Contracts.csproj" />
+    <ProjectReference Include="..\Jules.Engine.Parsing.Contracts\Jules.Engine.Parsing.Contracts.csproj" />
+	<ProjectReference Include="..\Jules.Util.Shared\Jules.Util.Shared.csproj" />
+  </ItemGroup>
+
+</Project>
