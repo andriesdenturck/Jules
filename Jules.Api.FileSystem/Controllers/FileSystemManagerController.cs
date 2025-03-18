@@ -179,16 +179,16 @@ public class FileSystemManagerController : ControllerBase
     /// <summary>
     /// Maps internal <see cref="FileContent"/> to a <see cref="FileResponse"/> DTO.
     /// </summary>
-    /// <param name="request">The file content to map.</param>
+    /// <param name="content">The file content to map.</param>
     /// <returns>Mapped <see cref="FileResponse"/>.</returns>
-    private FileResponse MapToResponse(FileContent request)
+    private FileResponse MapToResponse(FileContent content)
     {
         return new FileResponse
         {
-            Content = request.Data,
-            MimeType = request.MimeType ?? "application/octet-stream",
-            FileName = request.FileName ?? "Unnamed",
-            FolderPath = request.Path
+            Content = content.Data,
+            MimeType = content.MimeType ?? "application/octet-stream",
+            FileName = content.FileName ?? "Unnamed",
+            FolderPath = content.Path
         };
     }
 
