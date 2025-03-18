@@ -6,7 +6,7 @@ This is a **.NET 8 Web API** solution built in **Visual Studio 2022**, designed 
 
 - Visual Studio 2022
 - .NET 8 SDK
-- Postman or Swagger (automatically opens on run) for testing
+- Postman for testing (Swagger opens automatically on run)
 
 ---
 
@@ -83,9 +83,9 @@ This `FileSystemManagerController` provides endpoints for file and folder manage
 - All folder paths **must start with the username**, e.g.:
 
 ```
-  User/my-folder/
+  JulesVerne/my-folder/
 ```
-- **Folders must end with a trailing slash `/`**, e.g.:
+- **Folders must end with a trailing slash `/`**
 
 
 Failing to follow this format may result in unauthorized or invalid request errors.
@@ -117,16 +117,15 @@ Creates a new folder at the given path.
 
 ---
 
-### 📥 `GET /api/FileSystem/ReadFile`
+### 📥 `GET /api/FileSystem/DownloadFile`
 
 Reads a file from a specified path.
 
-- **Query Param:** `filePath`
+- **Query Param:** `path`
 - **Responses:**
 	- `200 OK` – File content
 	- `400 BadRequest` – Missing path
 	- `403 Forbidden` – Unauthorized
-	- `501 NotImplemented` – For multi-file reading (not yet supported)
 
 ---
 
@@ -134,7 +133,7 @@ Reads a file from a specified path.
 
 Deletes a file or folder.
 
-- **Query Param:** `filePath`
+- **Query Param:** `path`
 - **Responses:**
 	- `200 OK` – Item deleted
 	- `400 BadRequest` – Missing path
