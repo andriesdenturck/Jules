@@ -149,8 +149,8 @@ namespace Jules.Engine.Parsing.Tests
             // Arrange
             var fileItems = new List<FileItem>
             {
-                new FileItem { TokenId = "file1", FileName = "folder1", FolderPath = "/folder1" },
-                new FileItem { TokenId = "file2", FileName = "folder1", FolderPath = "/folder1" }
+                new FileItem { TokenId = "file1", Path = "/folder1/file1.txt" },
+                new FileItem { TokenId = "file2", Path = "/folder1/folder2/file2.txt" }
             };
 
             var blob1 = new Blob
@@ -180,8 +180,8 @@ namespace Jules.Engine.Parsing.Tests
                 Assert.That(zipArchive.Entries.Count, Is.EqualTo(2));  // Ensure two files in the zip
 
                 // Check if both files are inside the zip
-                var entry1 = zipArchive.GetEntry("folder1\\file1.txt");
-                var entry2 = zipArchive.GetEntry("folder1\\file2.txt");
+                var entry1 = zipArchive.GetEntry("/folder1/file1.txt");
+                var entry2 = zipArchive.GetEntry("/folder1/folder2/file2.txt");
 
                 Assert.That(entry1, Is.Not.Null);
                 Assert.That(entry2, Is.Not.Null);
@@ -227,7 +227,7 @@ namespace Jules.Engine.Parsing.Tests
             // Arrange
             var fileItems = new List<FileItem>
             {
-                new FileItem { TokenId = "file1", FileName = "folder1", FolderPath = "/folder1" }
+                new FileItem { TokenId = "file1", Path = "/folder1/file1.txt" }
             };
 
             var blob1 = new Blob
@@ -247,7 +247,7 @@ namespace Jules.Engine.Parsing.Tests
             using (var zipArchive = new ZipArchive(memoryStream, ZipArchiveMode.Read))
             {
                 Assert.That(zipArchive.Entries.Count, Is.EqualTo(1));  // Ensure one file in the zip
-                var entry1 = zipArchive.GetEntry("folder1\\file1.txt");
+                var entry1 = zipArchive.GetEntry("/folder1/file1.txt");
                 Assert.That(entry1, Is.Not.Null);
 
                 // Check the content of the file

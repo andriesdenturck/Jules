@@ -9,8 +9,8 @@ using Jules.Manager.FileSystem.Contracts;
 using Jules.Manager.FileSystem.Contracts.Models;
 using Jules.Util.Security.Contracts;
 using Jules.Util.Shared;
-using ItemInfo = Jules.Access.Archive.Contracts.Models.ItemInfo;
 using Jules.Engine.Parsing.Contracts.Models;
+using Jules.Access.Archive.Contracts.Models;
 
 namespace Jules.Manager.FileSystem.Service;
 
@@ -74,8 +74,8 @@ namespace Jules.Manager.FileSystem.Service;
     /// <inheritdoc />
     public async Task<Item> CreateFolderAsync(string folderPath)
     {
-        var ItemInfo = await archiveAccess.CreateFolderAsync(folderPath);
-        return MapToItem(ItemInfo);
+        var itemInfo = await archiveAccess.CreateFolderAsync(folderPath);
+        return MapToItem(itemInfo);
     }
 
     /// <inheritdoc />

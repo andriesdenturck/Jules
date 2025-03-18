@@ -11,9 +11,9 @@ namespace Jules.Engine.Parsing.Contracts
         /// Searches for the specified string within the file identified by the given token ID.
         /// </summary>
         /// <param name="tokenId">An encrypted identifier representing the file to be searched. The token is used to locate the file in the system.</param>
-        /// <param name="searchstring">The string to search for within the file's contents. This is the target text to find within the file.</param>
-        /// <returns><c>true</c> if the search string is found in the file; otherwise, <c>false</c>. Returns <c>true</c> when the string is found, indicating a successful search.</returns>
-        Task<bool> FindInFileAsync(string tokenId, string searchstring);
+        /// <param name="searchString">The string to search for within the file's contents. This is the target text to find within the file.</param>
+        /// <returns><c>true</c> if the file starts with the given string; otherwise, <c>false</c>. Returns <c>true</c> when the string is found, indicating a successful search.</returns>
+        Task<bool> FindInFileAsync(string tokenId, string searchString);
 
         /// <summary>
         /// Compresses the provided collection of file items into a single compressed byte array.

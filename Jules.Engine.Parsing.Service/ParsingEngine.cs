@@ -1,7 +1,6 @@
 ﻿using Jules.Access.Blob.Contracts;
 using Jules.Engine.Parsing.Contracts;
 using Jules.Engine.Parsing.Contracts.Models;
-using Jules.Util.Security.Contracts;
 using Jules.Util.Shared;
 using Microsoft.Extensions.Logging;
 using System.IO.Compression;
@@ -46,7 +45,7 @@ public partial class ParsingEngine : ServiceBase<ParsingEngine>, IParsingEngine
                 return false;
             }
 
-            string mimeType = blob.MimeType;
+            var mimeType = blob.MimeType;
 
             // Handle supported MIME types for content searching
             switch (mimeType.ToLowerInvariant())
@@ -60,8 +59,9 @@ public partial class ParsingEngine : ServiceBase<ParsingEngine>, IParsingEngine
                 case "application/x-www-form-urlencoded":
                 case "application/x-yaml":
                 case "text/csv":
+
                     // Convert byte data to UTF-8 string and search for the substring
-                    string utf8String = Encoding.UTF8.GetString(blob.Data);
+                    var utf8String = Encoding.UTF8.GetString(blob.Data);
                     return utf8String.StartsWith(searchString, StringComparison.OrdinalIgnoreCase);
 
                 default:
@@ -97,12 +97,12 @@ public partial class ParsingEngine : ServiceBase<ParsingEngine>, IParsingEngine
 
                     if (blob?.Data == null || blob.Data.Length == 0)
                     {
-                        Logger.LogWarning("Blob data is empty for file {FileName} in folder {FolderName}. Skipping.", item.TokenId, item.FileName);
+                        Logger.LogWarning("Blob data is empty for path {ItemPath}. Skipping.", item.Path);
                         continue; // Skip files with no data
                     }
 
                     // Create an entry for the file in the zip archive, maintaining the folder structure
-                    var entryName = Path.Combine(item.FileName, blob.FileName);
+                    var entryName = item.Path;
                     var entry = zipArchive.CreateEntry(entryName);
 
                     using (var entryStream = entry.Open())
@@ -116,7 +116,7 @@ public partial class ParsingEngine : ServiceBase<ParsingEngine>, IParsingEngine
             {
                 Data = memoryStream.ToArray(),
                 MimeType = "application/zip",
-                FileName = "Compressed.zip"
+                Path = "Compressed.zip"
             };
         }
     }
