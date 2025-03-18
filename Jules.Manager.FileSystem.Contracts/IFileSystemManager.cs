@@ -57,7 +57,7 @@ namespace Jules.Manager.FileSystem.Contracts
         Task<IEnumerable<Item>> FindInFilesAsync(string folder, string searchstring, int number = 10);
 
         /// <summary>
-        /// Downloads the content of a file from the specified path.
+        /// Downloads the content of a file or folder from the specified path.
         /// This method retrieves the file at the given path and returns its content as a <see cref="FileContent"> object.
         /// The returned object includes the file's name, MIME type, and binary data.
         /// </summary>
